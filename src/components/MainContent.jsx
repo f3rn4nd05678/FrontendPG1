@@ -1,4 +1,5 @@
 import React from "react";
+import Clientes from "./ClientForm";
 
 const MainContent = ({ view }) => {
 
@@ -31,6 +32,7 @@ const MainContent = ({ view }) => {
                     <div className="bg-white rounded-md shadow-md p-4">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Clientes</h1>
                         <p className="text-gray-600">Lista y edición de clientes.</p>
+                         <Clientes/>
                     </div>
                 );
             case "/cotizaciones":
