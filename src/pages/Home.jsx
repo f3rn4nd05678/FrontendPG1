@@ -1,2 +1,19 @@
-const Home = () => <h1 className="text-2xl font-bold p-4">Página principal protegida</h1>;
-export default Home;
+import React from "react";
+import Sidebar from "../components/Sidebar";
+import NavBar from "../components/NavBar";
+
+const Layout = ({ children }) => {
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex flex-col flex-1">
+        <NavBar />
+        <main className="flex-1 overflow-auto bg-gray-100 p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;
