@@ -8,9 +8,9 @@ export default {
     extend: {
       colors: {
         'plastihogar': {
-          blue: '#001489',
-          black: '#000000',
-          gray: '#f5f5f5',
+          bluep: '#001489',
+          blackp: '#000000',
+          grayp: '#f5f5f5',
         }
       }
     },
