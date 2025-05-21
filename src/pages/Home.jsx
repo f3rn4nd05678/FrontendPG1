@@ -1,19 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import NavBar from "../components/NavBar";
+import MainContent from "../components/MainContent";
 
-const Layout = ({ children }) => {
+const Home = () => {
+  const [selectedView, setSelectedView] = useState("dashboard");
+
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar onSelect={setSelectedView} />
       <div className="flex flex-col flex-1">
         <NavBar />
-        <main className="flex-1 overflow-auto bg-gray-100 p-6">
-          {children}
-        </main>
+        <MainContent view={selectedView} />
       </div>
     </div>
   );
 };
 
-export default Layout;
+export default Home;
