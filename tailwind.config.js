@@ -1,11 +1,19 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'plastihogar': {
+          blue: '#001489',
+          black: '#000000',
+          gray: '#f5f5f5',
+        }
+      }
+    },
   },
   plugins: [],
 }

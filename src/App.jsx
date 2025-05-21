@@ -1,9 +1,8 @@
-function App() {
-  return (
-    <div className="text-3xl font-bold text-red-500 p-4 bg-yellow-500">
-      Tailwind CSS v3 funcionando 🎉
-    </div>
-  );
-}
+import React from "react";
+import AppRoutes from "./routes/AppRoutes";
 
-export default App
+const App = () => {
+  return <AppRoutes />;
+};
+
+export default App;
