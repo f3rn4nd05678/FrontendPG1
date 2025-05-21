@@ -7,6 +7,8 @@ const api = axios.create({
   },
 });
 
+console.log("BASE URL:", import.meta.env.VITE_API_BASE_URL);
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token"); 
   if (token) {
@@ -35,11 +37,13 @@ api.interceptors.response.use(
 );
 
 const apiService = {
+    
   get: (url, config = {}) => api.get(url, config),
   post: (url, data, config = {}) => api.post(url, data, config),
   put: (url, data, config = {}) => api.put(url, data, config),
   delete: (url, config = {}) => api.delete(url, config),
   patch: (url, data, config = {}) => api.patch(url, data, config),
+  
 };
 
 export default apiService;
