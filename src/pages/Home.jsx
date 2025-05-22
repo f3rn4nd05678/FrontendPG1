@@ -13,18 +13,18 @@ const Home = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar */}
+   
       <div className={`transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-0 -ml-56' : 'w-56'}`}>
         <Sidebar onSelect={setSelectedView} selectedView={selectedView} />
       </div>
       
-      {/* Main content area */}
+      
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar />
         <MainContent view={selectedView} />
       </div>
       
-      {/* Sidebar toggle button - only show when sidebar is collapsed */}
+      
       {sidebarCollapsed && (
         <button
           onClick={toggleSidebar}
@@ -42,7 +42,7 @@ const Home = () => {
         </button>
       )}
 
-      {/* Fixed toggle button at the bottom - only show when sidebar is visible */}
+    
       {!sidebarCollapsed && (
         <button
           onClick={toggleSidebar}
