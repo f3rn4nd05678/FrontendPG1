@@ -15,6 +15,15 @@ const API_ENDPOINTS = {
     VALIDATE_CODE: "/Cliente/validar-codigo",
     VALIDATE_NIT: "/Cliente/validar-nit",
   },
+  PRODUCTO: {
+    LIST: "/Producto/listar",
+    GET: "/Producto/obtener",
+    SEARCH: "/Producto/buscar",
+    CREATE: "/Producto/crear",
+    UPDATE: "/Producto/actualizar",
+    DELETE: "/Producto/eliminar",
+    VALIDATE_CODE: "/Producto/validar-codigo",
+  },
   MENU: {
     GET_MENU: "/Menu/Obtener-menu",
     GET_ALL_MENUS: "/Menu/Obtener-todos-menus",

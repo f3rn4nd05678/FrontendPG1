@@ -16,8 +16,13 @@ export const getMenu = async () => {
   return response.data;
 };
 
+
+// ========================================
+// CLIENTES
+// ========================================
+
 export const listarClientes = async (filtros = {}) => {
-  const response = await api.get(ENDPOINTS.CLIENTE.LIST);
+  const response = await api.post(ENDPOINTS.CLIENTE.LIST, filtros);
   return response.data;
 };
 
@@ -53,5 +58,47 @@ export const validarCodigo = async (data) => {
 
 export const validarNit = async (data) => {
   const response = await api.post(ENDPOINTS.CLIENTE.VALIDATE_NIT, data);
+  return response.data;
+};
+
+
+export const listarProductos = async (filtros = {}) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.LIST, filtros);
+  return response.data;
+};
+
+
+export const obtenerProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.GET, data);
+  return response.data;
+};
+
+
+export const buscarProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.SEARCH, data);
+  return response.data;
+};
+
+
+export const crearProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.CREATE, data);
+  return response.data;
+};
+
+
+export const actualizarProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.UPDATE, data);
+  return response.data;
+};
+
+
+export const eliminarProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.DELETE, data);
+  return response.data;
+};
+
+
+export const validarCodigoProducto = async (data) => {
+  const response = await api.post(ENDPOINTS.PRODUCTO.VALIDATE_CODE, data);
   return response.data;
 };

@@ -10,10 +10,7 @@ const AppRoutes = () => {
   return (
     <Router>
       <Routes>
-        {/* Ruta pública */}
         <Route path="/login" element={<Login />} />
-
-        {/* Rutas privadas */}
         <Route
           path="/"
           element={
@@ -30,8 +27,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* Ruta para 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

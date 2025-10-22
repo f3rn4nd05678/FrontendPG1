@@ -1,5 +1,7 @@
 import React from "react";
 import ClientMain from "./ClientMain";
+import ProveedorMain from "./ProveedorMain";
+import ProductMain from "./ProductMain";
 
 const MainContent = ({ view }) => {
 
@@ -14,17 +16,12 @@ const MainContent = ({ view }) => {
                     </div>
                 );
             case "/productos":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Gestión de Productos</h1>
-                        <p className="text-gray-600">La interfaz de productos se cargará aquí.</p>
-                    </div>
-                );
+                return <ProductMain />;
+                
             case "/proveedores":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Proveedores</h1>
-                        <p className="text-gray-600">Gestión de proveedores.</p>
+                        <ProveedorMain />
                     </div>
                 );
             case "/clientes":
