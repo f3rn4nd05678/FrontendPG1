@@ -24,6 +24,15 @@ const API_ENDPOINTS = {
     DELETE: "/Producto/eliminar",
     VALIDATE_CODE: "/Producto/validar-codigo",
   },
+  PROVEEDOR: {
+    LIST: "/Proveedor/listar",
+    GET: "/Proveedor/obtener",
+    SEARCH: "/Proveedor/buscar",
+    CREATE: "/Proveedor/crear",
+    UPDATE: "/Proveedor/actualizar",
+    DELETE: "/Proveedor/eliminar",
+    VALIDATE_NAME: "/Proveedor/validar-nombre",
+  },
   MENU: {
     GET_MENU: "/Menu/Obtener-menu",
     GET_ALL_MENUS: "/Menu/Obtener-todos-menus",

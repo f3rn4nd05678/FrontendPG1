@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { validarCodigoProducto } from "../api/userService";
+import { validarCodigoProducto, listarProveedores } from "../api/userService";
 import Loader from "./Loader";
 import Alert from "./Alert";
 
@@ -7,17 +7,13 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
     const [formData, setFormData] = useState({
         codigo: "",
         nombre: "",
-        descripcion: "",
         categoria: "",
         precio: 0,
-        activo: true,
-        // Campos adicionales según tu modelo
-        proveedorId: "",
-        stock: 0,
         stockMinimo: 0,
-        unidadMedida: "Unidad"
+        proveedorId: null
     });
 
+    const [proveedores, setProveedores] = useState([]);
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: "", message: "" });
     const [validaciones, setValidaciones] = useState({
@@ -25,16 +21,33 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
     });
 
     useEffect(() => {
+        cargarProveedores();
         if (productoInicial) {
-            setFormData(prev => ({ ...prev, ...productoInicial }));
+            setFormData({
+                codigo: productoInicial.codigo || "",
+                nombre: productoInicial.nombre || "",
+                categoria: productoInicial.categoria || "",
+                precio: productoInicial.precio || 0,
+                stockMinimo: productoInicial.stockMinimo || 0,
+                proveedorId: productoInicial.proveedorId || null
+            });
         }
     }, [productoInicial]);
 
+    const cargarProveedores = async () => {
+        try {
+            const response = await listarProveedores({ pagina: 1, elementosPorPagina: 100 });
+            setProveedores(response.detail?.proveedores || []);
+        } catch (error) {
+            console.error("Error al cargar proveedores:", error);
+        }
+    };
+
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value, type } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: type === "checkbox" ? checked : value,
+            [name]: type === "number" ? (value === "" ? 0 : parseFloat(value)) : value,
         }));
     };
 
@@ -96,7 +109,7 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validaciones básicas
+        // Validaciones según el backend
         if (!formData.codigo.trim()) {
             setAlert({
                 show: true,
@@ -124,18 +137,37 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
             return;
         }
 
-        if (parseFloat(formData.precio) < 0) {
+        if (parseFloat(formData.precio) <= 0) {
             setAlert({
                 show: true,
                 type: "error",
-                message: "El precio no puede ser negativo"
+                message: "El precio debe ser mayor a 0"
+            });
+            return;
+        }
+
+        if (parseInt(formData.stockMinimo) < 0) {
+            setAlert({
+                show: true,
+                type: "error",
+                message: "El stock mínimo no puede ser negativo"
             });
             return;
         }
 
         setLoading(true);
         try {
-            await onSubmit(formData);
+            // Preparar datos según el backend espera
+            const dataToSend = {
+                nombre: formData.nombre.trim(),
+                codigo: formData.codigo.trim(),
+                categoria: formData.categoria.trim() || null,
+                precio: parseFloat(formData.precio),
+                stockMinimo: parseInt(formData.stockMinimo),
+                proveedorId: formData.proveedorId ? parseInt(formData.proveedorId) : null
+            };
+
+            await onSubmit(dataToSend);
         } catch (error) {
             setAlert({
                 show: true,
@@ -186,6 +218,7 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                 value={formData.codigo}
                                 onChange={handleChange}
                                 onBlur={handleBlurCodigo}
+                                maxLength={50}
                                 className={`w-full p-2 border rounded-md focus:outline-none focus:ring-2 ${validaciones.codigo.validando
                                         ? "border-yellow-400 focus:ring-yellow-500"
                                         : validaciones.codigo.valido
@@ -193,7 +226,7 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                             : "border-red-500 focus:ring-red-500"
                                     }`}
                                 required
-                                disabled={productoInicial !== null} // No editable si es actualización
+                                disabled={productoInicial !== null}
                             />
                             {validaciones.codigo.mensaje && (
                                 <p
@@ -203,6 +236,7 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                     {validaciones.codigo.mensaje}
                                 </p>
                             )}
+                            <p className="text-xs text-gray-500 mt-1">Máximo 50 caracteres</p>
                         </div>
 
                         {/* Nombre */}
@@ -215,9 +249,11 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                 type="text"
                                 value={formData.nombre}
                                 onChange={handleChange}
+                                maxLength={100}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             />
+                            <p className="text-xs text-gray-500 mt-1">Máximo 100 caracteres</p>
                         </div>
 
                         {/* Categoría */}
@@ -230,109 +266,56 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                 type="text"
                                 value={formData.categoria}
                                 onChange={handleChange}
+                                maxLength={50}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ej: Electrónica, Alimentos, etc."
+                                placeholder="Ej: Bolsas Plásticas, Embalaje Industrial"
                             />
+                            <p className="text-xs text-gray-500 mt-1">Máximo 50 caracteres (opcional)</p>
                         </div>
 
-                        {/* Unidad de Medida */}
+                        {/* Proveedor */}
                         <div>
                             <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Unidad de Medida
+                                Proveedor
                             </label>
                             <select
-                                name="unidadMedida"
-                                value={formData.unidadMedida}
+                                name="proveedorId"
+                                value={formData.proveedorId || ""}
                                 onChange={handleChange}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="Unidad">Unidad</option>
-                                <option value="Caja">Caja</option>
-                                <option value="Paquete">Paquete</option>
-                                <option value="Kg">Kilogramo (Kg)</option>
-                                <option value="Litro">Litro</option>
-                                <option value="Metro">Metro</option>
-                                <option value="Docena">Docena</option>
+                                <option value="">Seleccione un proveedor</option>
+                                {proveedores.map((proveedor) => (
+                                    <option key={proveedor.id} value={proveedor.id}>
+                                        {proveedor.nombre}
+                                    </option>
+                                ))}
                             </select>
+                            <p className="text-xs text-gray-500 mt-1">Opcional</p>
                         </div>
 
                         {/* Precio */}
                         <div>
                             <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Precio (GTQ) *
+                                Precio Unitario (GTQ) *
                             </label>
                             <input
                                 name="precio"
                                 type="number"
                                 step="0.01"
-                                min="0"
+                                min="0.01"
                                 value={formData.precio}
                                 onChange={handleChange}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             />
-                        </div>
-
-                        {/* Estado */}
-                        <div className="flex items-center pt-7">
-                            <input
-                                name="activo"
-                                type="checkbox"
-                                checked={formData.activo}
-                                onChange={handleChange}
-                                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label className="ml-2 block text-sm text-gray-700 font-medium">
-                                Producto Activo
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Descripción */}
-                    <div className="mt-4">
-                        <label className="block text-gray-700 text-sm font-medium mb-2">
-                            Descripción
-                        </label>
-                        <textarea
-                            name="descripcion"
-                            value={formData.descripcion}
-                            onChange={handleChange}
-                            rows="3"
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Descripción detallada del producto..."
-                        />
-                    </div>
-                </div>
-
-                {/* Inventario */}
-                <div className="mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
-                        Control de Inventario
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Stock Actual */}
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Stock Actual
-                            </label>
-                            <input
-                                name="stock"
-                                type="number"
-                                min="0"
-                                value={formData.stock}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Cantidad disponible en inventario
-                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Debe ser mayor a 0</p>
                         </div>
 
                         {/* Stock Mínimo */}
                         <div>
                             <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Stock Mínimo
+                                Stock Mínimo *
                             </label>
                             <input
                                 name="stockMinimo"
@@ -341,9 +324,10 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                 value={formData.stockMinimo}
                                 onChange={handleChange}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                                Alerta cuando el stock llegue a este nivel
+                                Cantidad mínima para generar alertas
                             </p>
                         </div>
                     </div>
