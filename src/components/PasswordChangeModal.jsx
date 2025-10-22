@@ -44,7 +44,8 @@ const PasswordChangeModal = ({ isOpen, onSuccess }) => {
             await cambiarPasswordPrimerLogin({
                 correo: tempUser.correo,
                 passwordActual: tempUser.password,
-                nuevaPassword: newPassword
+                nuevaPassword: newPassword,
+                confirmarPassword: confirmPassword,
             });
 
             sessionStorage.removeItem('tempUser');
