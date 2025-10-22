@@ -2,9 +2,10 @@ import React from "react";
 import ClientMain from "./ClientMain";
 import ProveedorMain from "./ProveedorMain";
 import ProductMain from "./ProductMain";
+import UserMain from "./UserMain";
+import RolMain from "./RolMain";
 
 const MainContent = ({ view }) => {
-
 
     const renderView = () => {
         switch (view) {
@@ -17,19 +18,13 @@ const MainContent = ({ view }) => {
                 );
             case "/productos":
                 return <ProductMain />;
-                
+
             case "/proveedores":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <ProveedorMain />
-                    </div>
-                );
+                return <ProveedorMain />;
+
             case "/clientes":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <ClientMain />
-                    </div>
-                );
+                return <ClientMain />;
+
             case "/cotizaciones":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
@@ -48,35 +43,21 @@ const MainContent = ({ view }) => {
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Facturas</h1>
-                        <p className="text-gray-600">Facturación de ventas realizadas.</p>
+                        <p className="text-gray-600">Gestión de facturas electrónicas (FEL).</p>
                     </div>
                 );
-            case "/inventario/stock":
+            case "/inventario":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Stock Actual</h1>
-                        <p className="text-gray-600">Control del stock actual disponible.</p>
-                    </div>
-                );
-            case "/inventario/movimientos":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Movimientos</h1>
-                        <p className="text-gray-600">Historial de movimientos de inventario.</p>
-                    </div>
-                );
-            case "/inventario/alertas":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Alertas de Inventario</h1>
-                        <p className="text-gray-600">Alertas por niveles críticos de stock.</p>
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario</h1>
+                        <p className="text-gray-600">Control de stock y movimientos de inventario.</p>
                     </div>
                 );
             case "/reportes/ventas":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Reporte de Ventas</h1>
-                        <p className="text-gray-600">Gráficos e informes de ventas.</p>
+                        <p className="text-gray-600">Análisis y estadísticas de ventas.</p>
                     </div>
                 );
             case "/reportes/inventario":
@@ -87,19 +68,11 @@ const MainContent = ({ view }) => {
                     </div>
                 );
             case "/admin/usuarios":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Usuarios</h1>
-                        <p className="text-gray-600">Administración de usuarios del sistema.</p>
-                    </div>
-                );
+                return <UserMain />;
+
             case "/admin/roles":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Roles y Permisos</h1>
-                        <p className="text-gray-600">Gestión de roles y permisos de acceso.</p>
-                    </div>
-                );
+                return <RolMain />;
+
             case "/admin/configuracion":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
@@ -117,10 +90,8 @@ const MainContent = ({ view }) => {
         }
     };
 
-
     return (
         <main className="flex-1 overflow-auto bg-gray-50 p-4 w-full">
-
             {renderView()}
         </main>
     );

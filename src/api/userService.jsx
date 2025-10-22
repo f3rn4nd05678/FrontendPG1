@@ -21,6 +21,116 @@ export const getMenu = async () => {
 };
 
 // ========================================
+// USUARIOS
+// ========================================
+
+export const listarUsuarios = async (filtros = {}) => {
+  const response = await api.post(ENDPOINTS.USUARIO.LIST, filtros);
+  return response.data;
+};
+
+export const obtenerUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.GET, data);
+  return response.data;
+};
+
+export const crearUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.CREATE, data);
+  return response.data;
+};
+
+export const actualizarUsuario = async (data) => {
+  const { id, ...datos } = data;
+  const response = await api.post(ENDPOINTS.USUARIO.UPDATE, {
+    id,
+    datos
+  });
+  return response.data;
+};
+
+export const eliminarUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.DELETE, data);
+  return response.data;
+};
+
+export const validarCorreoUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.VALIDATE_CORREO, data);
+  return response.data;
+};
+
+export const cambiarPasswordUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.CAMBIAR_PASSWORD, data);
+  return response.data;
+};
+
+export const activarDesactivarUsuario = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.ACTIVAR_DESACTIVAR, data);
+  return response.data;
+};
+
+// ========================================
+// ROLES
+// ========================================
+
+export const listarRoles = async (filtros = {}) => {
+  const response = await api.post(ENDPOINTS.ROL.LIST, filtros);
+  return response.data;
+};
+
+export const obtenerRol = async (data) => {
+  const response = await api.post(ENDPOINTS.ROL.GET, data);
+  return response.data;
+};
+
+export const crearRol = async (data) => {
+  const response = await api.post(ENDPOINTS.ROL.CREATE, data);
+  return response.data;
+};
+
+export const actualizarRol = async (data) => {
+  const { id, ...datos } = data;
+  const response = await api.post(ENDPOINTS.ROL.UPDATE, {
+    id,
+    datos
+  });
+  return response.data;
+};
+
+export const eliminarRol = async (data) => {
+  const response = await api.post(ENDPOINTS.ROL.DELETE, data);
+  return response.data;
+};
+
+// ========================================
+// PERMISOS
+// ========================================
+
+export const listarPermisos = async (filtros = {}) => {
+  const response = await api.post(ENDPOINTS.PERMISO.LIST, filtros);
+  return response.data;
+};
+
+export const obtenerPermiso = async (data) => {
+  const response = await api.post(ENDPOINTS.PERMISO.GET, data);
+  return response.data;
+};
+
+export const asignarPermisoARol = async (data) => {
+  const response = await api.post(ENDPOINTS.PERMISO.ASIGNAR_ROL, data);
+  return response.data;
+};
+
+export const removerPermisoDeRol = async (data) => {
+  const response = await api.post(ENDPOINTS.PERMISO.REMOVER_ROL, data);
+  return response.data;
+};
+
+export const listarPermisosPorRol = async (data) => {
+  const response = await api.post(ENDPOINTS.PERMISO.LISTAR_POR_ROL, data);
+  return response.data;
+};
+
+// ========================================
 // CLIENTES
 // ========================================
 
