@@ -19,14 +19,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

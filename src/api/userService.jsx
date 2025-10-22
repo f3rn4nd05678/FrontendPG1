@@ -5,10 +5,16 @@ import ENDPOINTS from "./apiEndpoints";
 // AUTENTICACIÓN
 // ========================================
 
-export const login = async (credentials) => {
-  const response = await api.post(ENDPOINTS.AUTH.LOGIN, credentials);
-  return response.data;
-};
+
+export const login = (credentials) => api.post(ENDPOINTS.AUTH.LOGIN, credentials).then((res) => {
+
+  const detail = res?.data?.detail;
+  if (!detail) {
+    const msg = res?.data?.message || "Respuesta inválida del servidor";
+    throw new Error(msg);
+  }
+  return detail; // <- devuelve el payload directo
+});
 
 export const getUsers = async () => {
   const response = await api.post(ENDPOINTS.AUTH.USERS);
@@ -261,5 +267,10 @@ export const eliminarProveedor = async (data) => {
 
 export const validarNombreProveedor = async (data) => {
   const response = await api.post(ENDPOINTS.PROVEEDOR.VALIDATE_NAME, data);
+  return response.data;
+};
+
+export const cambiarPasswordPrimerLogin = async (data) => {
+  const response = await api.post(ENDPOINTS.USUARIO.CAMBIAR_PASSWORD_PRIMER_LOGIN, data);
   return response.data;
 };

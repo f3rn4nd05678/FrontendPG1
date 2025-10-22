@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login as loginService } from "../api/userService";
+import PasswordChangeModal from "../components/PasswordChangeModal";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -18,20 +20,50 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
+        setLoading(true);
+
         try {
-            const response = await loginService(credentials);
-            localStorage.setItem("token", response.detail.token);
+            const payload = await loginService(credentials);
+            const { requirePasswordChange, token, usuario } = payload;
+
+            if (requirePasswordChange) {
+                sessionStorage.setItem(
+                    "tempUser",
+                    JSON.stringify({
+                        correo: credentials.correo,
+                        password: credentials.password,
+                    })
+                );
+                setShowPasswordChangeModal(true);
+                return;
+            }
+
+            if (!token || !usuario) throw new Error("Respuesta de login inválida");
+
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(usuario));
             navigate("/");
         } catch (err) {
-            console.error("Error de inicio de sesión:", err);
-            setError(err.response?.data?.message || "Error al iniciar sesión. Verifica tus credenciales.");
+            console.error("Error en login:", err);
+            setError(err.response?.data?.message || err.message || "Error al iniciar sesión");
         } finally {
             setLoading(false);
         }
     };
 
+
+
+    const handlePasswordChangeSuccess = async () => {
+        setShowPasswordChangeModal(false);
+        sessionStorage.removeItem('tempUser');
+        setError('');
+        setCredentials({ correo: '', password: '' });
+        // Usar un componente de alerta mejor en lugar de alert()
+        setError(''); // Limpiar error anterior
+        // Mostrar mensaje de éxito (puedes crear un estado para esto)
+        alert('Contraseña actualizada. Por favor inicia sesión con tu nueva contraseña.');
+    };
     return (
         <div className="flex w-screen h-screen overflow-hidden">
 
@@ -155,6 +187,10 @@ const Login = () => {
                     </div>
                 </div>
             </div>
+            <PasswordChangeModal
+                isOpen={showPasswordChangeModal}
+                onSuccess={handlePasswordChangeSuccess}
+            />
         </div>
     );
 };

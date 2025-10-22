@@ -13,6 +13,7 @@ const API_ENDPOINTS = {
     DELETE: "/Usuario/eliminar",
     VALIDATE_CORREO: "/Usuario/validar-correo",
     CAMBIAR_PASSWORD: "/Usuario/cambiar-password",
+    CAMBIAR_PASSWORD_PRIMER_LOGIN: "/Usuario/cambiar-password-primer-login",
     ACTIVAR_DESACTIVAR: "/Usuario/activar-desactivar",
   },
   ROL: {

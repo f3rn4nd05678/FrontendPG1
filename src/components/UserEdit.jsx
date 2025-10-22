@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { validarCorreoUsuario } from "../api/userService";
+import { Info } from "lucide-react";
 import Loader from "./Loader";
 import Alert from "./Alert";
 
@@ -7,8 +8,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
     const [formData, setFormData] = useState({
         nombre: "",
         correo: "",
-        password: "",
-        confirmarPassword: "",
         rolId: null,
         activo: true,
         forzarCambioPassword: false
@@ -16,11 +15,8 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
 
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: "", message: "" });
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [validaciones, setValidaciones] = useState({
-        correo: { validando: false, valido: true, mensaje: "" },
-        password: { valido: true, mensaje: "" }
+        correo: { validando: false, valido: true, mensaje: "" }
     });
 
     useEffect(() => {
@@ -28,8 +24,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
             setFormData({
                 nombre: usuarioInicial.nombre || "",
                 correo: usuarioInicial.correo || "",
-                password: "",
-                confirmarPassword: "",
                 rolId: usuarioInicial.rolId || null,
                 activo: usuarioInicial.activo !== undefined ? usuarioInicial.activo : true,
                 forzarCambioPassword: usuarioInicial.forzarCambioPassword || false
@@ -43,34 +37,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
             ...prev,
             [name]: type === "checkbox" ? checked : (name === "rolId" ? parseInt(value) : value),
         }));
-
-        // Validar password en tiempo real
-        if (name === "password" || name === "confirmarPassword") {
-            validarPasswordsCoinciden(
-                name === "password" ? value : formData.password,
-                name === "confirmarPassword" ? value : formData.confirmarPassword
-            );
-        }
-    };
-
-    const validarPasswordsCoinciden = (password, confirmar) => {
-        if (confirmar && password !== confirmar) {
-            setValidaciones(prev => ({
-                ...prev,
-                password: {
-                    valido: false,
-                    mensaje: "Las contraseñas no coinciden"
-                }
-            }));
-        } else {
-            setValidaciones(prev => ({
-                ...prev,
-                password: {
-                    valido: true,
-                    mensaje: ""
-                }
-            }));
-        }
     };
 
     const handleBlurCorreo = async (e) => {
@@ -139,7 +105,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
     };
 
     const validarFormulario = () => {
-        // Validar campos obligatorios
         if (!formData.nombre.trim()) {
             setAlert({
                 show: true,
@@ -158,72 +123,22 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
             return false;
         }
 
-        if (!formData.rolId) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "Debe seleccionar un rol"
-            });
-            return false;
-        }
-
-        // Validar correo
         if (!validaciones.correo.valido) {
             setAlert({
                 show: true,
                 type: "error",
-                message: validaciones.correo.mensaje || "El correo no es válido"
+                message: "El correo no es válido o ya está registrado"
             });
             return false;
         }
 
-        // Validar password solo si es usuario nuevo o si se está cambiando
-        if (!usuarioInicial) {
-            if (!formData.password) {
-                setAlert({
-                    show: true,
-                    type: "error",
-                    message: "La contraseña es obligatoria"
-                });
-                return false;
-            }
-
-            if (formData.password.length < 6) {
-                setAlert({
-                    show: true,
-                    type: "error",
-                    message: "La contraseña debe tener al menos 6 caracteres"
-                });
-                return false;
-            }
-
-            if (formData.password !== formData.confirmarPassword) {
-                setAlert({
-                    show: true,
-                    type: "error",
-                    message: "Las contraseñas no coinciden"
-                });
-                return false;
-            }
-        } else if (formData.password) {
-            // Si es edición y se está cambiando la contraseña
-            if (formData.password.length < 6) {
-                setAlert({
-                    show: true,
-                    type: "error",
-                    message: "La contraseña debe tener al menos 6 caracteres"
-                });
-                return false;
-            }
-
-            if (formData.password !== formData.confirmarPassword) {
-                setAlert({
-                    show: true,
-                    type: "error",
-                    message: "Las contraseñas no coinciden"
-                });
-                return false;
-            }
+        if (!formData.rolId) {
+            setAlert({
+                show: true,
+                type: "error",
+                message: "Debes seleccionar un rol"
+            });
+            return false;
         }
 
         return true;
@@ -245,11 +160,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                 activo: formData.activo,
                 forzarCambioPassword: formData.forzarCambioPassword
             };
-
-            // Solo incluir password si es nuevo usuario o si se está cambiando
-            if (!usuarioInicial || formData.password) {
-                datos.password = formData.password;
-            }
 
             await onSubmit(datos);
         } catch (error) {
@@ -284,18 +194,31 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                     </h1>
                     <p className="text-gray-600 mt-1">
                         {usuarioInicial
-                            ? "Modifica los datos del usuario"
-                            : "Completa el formulario para crear un nuevo usuario"}
+                            ? "Modifica la información del usuario"
+                            : "Completa los datos para crear un nuevo usuario"}
                     </p>
                 </div>
 
-                {/* Formulario */}
+                {/* Mensaje informativo para nuevo usuario */}
+                {!usuarioInicial && (
+                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start">
+                        <Info className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-blue-800">
+                            <p className="font-medium mb-1">Generación automática de contraseña</p>
+                            <p>
+                                Se generará una contraseña temporal aleatoria que será enviada al correo electrónico del usuario.
+                                El usuario deberá cambiarla en su primer inicio de sesión.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit}>
-                    <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+                    <div className="space-y-6">
                         {/* Información básica */}
                         <div>
                             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                                Información Básica
+                                Información Personal
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -308,7 +231,7 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                                         value={formData.nombre}
                                         onChange={handleChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Ingresa el nombre completo"
+                                        placeholder="Juan Pérez"
                                         required
                                     />
                                 </div>
@@ -344,88 +267,6 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                                                 }`}
                                         >
                                             {validaciones.correo.mensaje}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Contraseña */}
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                                {usuarioInicial ? "Cambiar Contraseña (Opcional)" : "Contraseña"}
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Contraseña {!usuarioInicial && <span className="text-red-500">*</span>}
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder={usuarioInicial ? "Dejar vacío para mantener" : "Mínimo 6 caracteres"}
-                                            required={!usuarioInicial}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                                        >
-                                            {showPassword ? (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Confirmar Contraseña {!usuarioInicial && <span className="text-red-500">*</span>}
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirmarPassword"
-                                            value={formData.confirmarPassword}
-                                            onChange={handleChange}
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${!validaciones.password.valido
-                                                    ? "border-red-500 focus:ring-red-500"
-                                                    : "border-gray-300 focus:ring-blue-500"
-                                                }`}
-                                            placeholder="Confirma la contraseña"
-                                            required={!usuarioInicial || formData.password}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                                        >
-                                            {showConfirmPassword ? (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    </div>
-                                    {!validaciones.password.valido && (
-                                        <p className="text-xs text-red-600 mt-1">
-                                            {validaciones.password.mensaje}
                                         </p>
                                     )}
                                 </div>
@@ -479,18 +320,20 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                                     </span>
                                 </label>
 
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        name="forzarCambioPassword"
-                                        checked={formData.forzarCambioPassword}
-                                        onChange={handleChange}
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700">
-                                        Forzar cambio de contraseña en el próximo inicio de sesión
-                                    </span>
-                                </label>
+                                {usuarioInicial && (
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="forzarCambioPassword"
+                                            checked={formData.forzarCambioPassword}
+                                            onChange={handleChange}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">
+                                            Forzar cambio de contraseña en el próximo inicio de sesión
+                                        </span>
+                                    </label>
+                                )}
                             </div>
                         </div>
 
@@ -505,7 +348,7 @@ const UserEdit = ({ onSubmit, usuario: usuarioInicial = null, roles = [], onCanc
                             </button>
                             <button
                                 type="submit"
-                                disabled={loading || !validaciones.correo.valido || !validaciones.password.valido}
+                                disabled={loading || !validaciones.correo.valido}
                                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? "Guardando..." : usuarioInicial ? "Actualizar Usuario" : "Crear Usuario"}
