@@ -81,6 +81,23 @@ const API_ENDPOINTS = {
     DELETE: "/Bodega/eliminar",
     VALIDATE_CODE: "/Bodega/validar-codigo",
   },
+    STOCK: {
+    LIST: "/Stock/listar",
+    GET: "/Stock/obtener",
+    PRODUCTO_BODEGA: "/Stock/producto-bodega",
+    ALERTAS: "/Stock/alertas",
+    BY_BODEGA: "/Stock/bodega",
+    BY_PRODUCTO: "/Stock/producto",
+  },
+
+  MOVIMIENTO_INVENTARIO: {
+    LIST: "/MovimientoInventario/listar",
+    GET: "/MovimientoInventario/obtener",
+    ENTRADA: "/MovimientoInventario/entrada",
+    SALIDA: "/MovimientoInventario/salida",
+    BY_PRODUCTO: "/MovimientoInventario/producto",
+    BY_BODEGA: "/MovimientoInventario/bodega",
+  },
 };
 
 export default API_ENDPOINTS;

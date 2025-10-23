@@ -356,3 +356,128 @@ export const validarCodigoBodega = async (data) => {
   const response = await api.post(ENDPOINTS.BODEGA.VALIDATE_CODE, data);
   return response.data;
 };
+
+// ==================== STOCK ====================
+export const listarStock = async (filtros = {}) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.STOCK.LIST, filtros);
+    return response.data;
+  } catch (error) {
+    console.error("Error al listar stock:", error);
+    throw error;
+  }
+};
+
+export const obtenerStock = async (id) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.STOCK.GET, { id });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener stock:", error);
+    throw error;
+  }
+};
+
+export const obtenerStockProductoBodega = async (idProducto, idBodega) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.STOCK.PRODUCTO_BODEGA, {
+      idProducto,
+      idBodega,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener stock producto-bodega:", error);
+    throw error;
+  }
+};
+
+export const obtenerAlertasStock = async () => {
+  try {
+    const response = await api.get(API_ENDPOINTS.STOCK.ALERTAS);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener alertas de stock:", error);
+    throw error;
+  }
+};
+
+export const obtenerStockPorBodega = async (idBodega) => {
+  try {
+    const response = await api.get(`${API_ENDPOINTS.STOCK.BY_BODEGA}/${idBodega}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener stock por bodega:", error);
+    throw error;
+  }
+};
+
+export const obtenerStockPorProducto = async (idProducto) => {
+  try {
+    const response = await api.get(`${API_ENDPOINTS.STOCK.BY_PRODUCTO}/${idProducto}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener stock por producto:", error);
+    throw error;
+  }
+};
+
+// ==================== MOVIMIENTOS DE INVENTARIO ====================
+export const listarMovimientos = async (filtros = {}) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MOVIMIENTO_INVENTARIO.LIST, filtros);
+    return response.data;
+  } catch (error) {
+    console.error("Error al listar movimientos:", error);
+    throw error;
+  }
+};
+
+export const obtenerMovimiento = async (id) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MOVIMIENTO_INVENTARIO.GET, { id });
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener movimiento:", error);
+    throw error;
+  }
+};
+
+export const registrarEntrada = async (entrada) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MOVIMIENTO_INVENTARIO.ENTRADA, entrada);
+    return response.data;
+  } catch (error) {
+    console.error("Error al registrar entrada:", error);
+    throw error;
+  }
+};
+
+export const registrarSalida = async (salida) => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MOVIMIENTO_INVENTARIO.SALIDA, salida);
+    return response.data;
+  } catch (error) {
+    console.error("Error al registrar salida:", error);
+    throw error;
+  }
+};
+
+export const obtenerMovimientosPorProducto = async (idProducto) => {
+  try {
+    const response = await api.get(`${API_ENDPOINTS.MOVIMIENTO_INVENTARIO.BY_PRODUCTO}/${idProducto}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener movimientos por producto:", error);
+    throw error;
+  }
+};
+
+export const obtenerMovimientosPorBodega = async (idBodega) => {
+  try {
+    const response = await api.get(`${API_ENDPOINTS.MOVIMIENTO_INVENTARIO.BY_BODEGA}/${idBodega}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener movimientos por bodega:", error);
+    throw error;
+  }
+};

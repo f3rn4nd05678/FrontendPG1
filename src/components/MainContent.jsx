@@ -6,6 +6,7 @@ import UserMain from "./UserMain";
 import RolMain from "./RolMain";
 import CategoryMain from "./CategoryMain";
 import BodegaMain from "./BodegaMain";
+import InventarioMain from "./InventarioMain";
 
 const MainContent = ({ view }) => {
 
@@ -55,12 +56,8 @@ const MainContent = ({ view }) => {
                     </div>
                 );
             case "/inventario":
-                return (
-                    <div className="bg-white rounded-md shadow-md p-4">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario</h1>
-                        <p className="text-gray-600">Control de stock y movimientos de inventario.</p>
-                    </div>
-                );
+                return <InventarioMain />;
+
             case "/reportes/ventas":
                 return (
                     <div className="bg-white rounded-md shadow-md p-4">
