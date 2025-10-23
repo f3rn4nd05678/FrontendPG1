@@ -322,3 +322,37 @@ export const validarCodigoCategoria = async (codigoPrefijo, excluirId = null) =>
   });
   return response.data;
 };
+
+export const listarBodegas = async (filtros = {}) => {
+  const response = await api.post(ENDPOINTS.BODEGA.LIST, filtros);
+  return response.data;
+};
+
+export const obtenerBodega = async (data) => {
+  const response = await api.post(ENDPOINTS.BODEGA.GET, data);
+  return response.data;
+};
+
+export const crearBodega = async (data) => {
+  const response = await api.post(ENDPOINTS.BODEGA.CREATE, data);
+  return response.data;
+};
+
+export const actualizarBodega = async (data) => {
+  const { id, ...datos } = data;
+  const response = await api.post(ENDPOINTS.BODEGA.UPDATE, {
+    id,
+    datos
+  });
+  return response.data;
+};
+
+export const eliminarBodega = async (data) => {
+  const response = await api.post(ENDPOINTS.BODEGA.DELETE, data);
+  return response.data;
+};
+
+export const validarCodigoBodega = async (data) => {
+  const response = await api.post(ENDPOINTS.BODEGA.VALIDATE_CODE, data);
+  return response.data;
+};

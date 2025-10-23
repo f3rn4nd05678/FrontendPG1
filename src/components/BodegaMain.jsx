@@ -1,428 +1,299 @@
 import React, { useState, useEffect } from "react";
-import {
-    getBodegasConFiltros,
-    eliminarBodega,
-    cambiarEstadoBodega
-} from "../api/bodegaService";
-import BodegaForm from "./BodegaForm";
-import BodegaAlertasModal from "./BodegaAlertasModal";
-import { AlertCircle, Warehouse, Search, Plus, Edit, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
+import { listarBodegas, eliminarBodega } from "../api/userService";
+import BodegaEdit from "./BodegaEdit";
+import Loader from "./Loader";
+import Alert from "./Alert";
 
 const BodegaMain = () => {
     const [bodegas, setBodegas] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [busqueda, setBusqueda] = useState("");
-    const [soloActivas, setSoloActivas] = useState(true);
-
-    // Modal de formulario
-    const [showForm, setShowForm] = useState(false);
+    const [cargando, setCargando] = useState(false);
+    const [modoEdicion, setModoEdicion] = useState(false);
     const [bodegaSeleccionada, setBodegaSeleccionada] = useState(null);
-    const [modoFormulario, setModoFormulario] = useState("crear"); // crear, editar, ver
-
-    // Modal de alertas
-    const [showAlertas, setShowAlertas] = useState(false);
-    const [bodegaAlertas, setBodegaAlertas] = useState(null);
-
-    // Paginación
-    const [paginacion, setPaginacion] = useState({
-        paginaActual: 1,
-        elementosPorPagina: 10,
-        totalPaginas: 0,
-        totalRegistros: 0
-    });
+    const [busqueda, setBusqueda] = useState("");
+    const [alert, setAlert] = useState({ show: false, type: "", message: "" });
+    const [modalConfirmacion, setModalConfirmacion] = useState({ show: false, id: null, nombre: "" });
 
     useEffect(() => {
         cargarBodegas();
-    }, [paginacion.paginaActual, paginacion.elementosPorPagina, busqueda, soloActivas]);
+    }, []);
 
     const cargarBodegas = async () => {
-        setLoading(true);
-        setError(null);
         try {
-            const response = await getBodegasConFiltros({
-                terminoBusqueda: busqueda,
-                soloActivas: soloActivas,
-                pagina: paginacion.paginaActual,
-                elementosPorPagina: paginacion.elementosPorPagina
+            setCargando(true);
+
+            const response = await listarBodegas();
+
+            const data = response?.data ?? response;
+
+            const ok = data?.isSuccess ?? data?.success ?? false;
+
+            if (!ok) {
+                throw new Error(data?.message || "No se pudieron obtener las bodegas");
+            }
+
+            const bodegasData = data?.detail?.bodegas ?? [];
+            setBodegas(bodegasData);
+        } catch (error) {
+            console.error("Error al cargar bodegas:", error);
+            setAlert({
+                show: true,
+                type: "error",
+                message: error?.message || "Error al cargar las bodegas",
             });
-
-            if (response.success) {
-                setBodegas(response.data.bodegas);
-                setPaginacion(prev => ({
-                    ...prev,
-                    totalPaginas: response.data.totalPaginas,
-                    totalRegistros: response.data.total
-                }));
-            }
-        } catch (err) {
-            setError("Error al cargar las bodegas: " + (err.message || "Error desconocido"));
-            console.error(err);
         } finally {
-            setLoading(false);
+            setCargando(false);
         }
     };
 
-    const handleNuevaBodega = () => {
+
+    const handleNuevo = () => {
         setBodegaSeleccionada(null);
-        setModoFormulario("crear");
-        setShowForm(true);
+        setModoEdicion(true);
     };
 
-    const handleEditarBodega = (bodega) => {
+    const handleEditar = (bodega) => {
         setBodegaSeleccionada(bodega);
-        setModoFormulario("editar");
-        setShowForm(true);
+        setModoEdicion(true);
     };
 
-    const handleVerBodega = (bodega) => {
-        setBodegaSeleccionada(bodega);
-        setModoFormulario("ver");
-        setShowForm(true);
+    const handleEliminar = (id, nombre) => {
+        setModalConfirmacion({ show: true, id, nombre });
     };
 
-    const handleEliminarBodega = async (id) => {
-        if (!window.confirm("¿Está seguro de eliminar esta bodega?")) return;
-
+    const confirmarEliminar = async () => {
         try {
-            const response = await eliminarBodega(id);
-            if (response.success) {
-                alert("Bodega eliminada correctamente");
-                cargarBodegas();
+            setCargando(true);
+            const response = await eliminarBodega({ id: modalConfirmacion.id });
+
+            const data = response?.data ?? response;
+            const ok = data?.isSuccess ?? data?.success ?? false;
+
+            if (ok) {
+                setAlert({
+                    show: true,
+                    type: "success",
+                    message: "Bodega eliminada correctamente"
+                });
+                await cargarBodegas();
             }
-        } catch (err) {
-            alert("Error al eliminar: " + (err.response?.data?.message || err.message));
+        } catch (error) {
+            console.error("Error al eliminar bodega:", error);
+            setAlert({
+                show: true,
+                type: "error",
+                message: error.response?.data?.message || "Error al eliminar la bodega"
+            });
+        } finally {
+            setCargando(false);
+            setModalConfirmacion({ show: false, id: null, nombre: "" });
         }
     };
 
-    const handleCambiarEstado = async (id, estadoActual) => {
-        const nuevoEstado = !estadoActual;
-        const accion = nuevoEstado ? "activar" : "desactivar";
-
-        if (!window.confirm(`¿Está seguro de ${accion} esta bodega?`)) return;
-
-        try {
-            const response = await cambiarEstadoBodega(id, nuevoEstado);
-            if (response.success) {
-                alert(`Bodega ${accion}da correctamente`);
-                cargarBodegas();
-            }
-        } catch (err) {
-            alert(`Error al ${accion}: ` + (err.response?.data?.message || err.message));
-        }
+    const cancelarEliminar = () => {
+        setModalConfirmacion({ show: false, id: null, nombre: "" });
     };
 
-    const handleVerAlertas = (bodega) => {
-        setBodegaAlertas(bodega);
-        setShowAlertas(true);
+    const handleGuardar = async () => {
+        setModoEdicion(false);
+        await cargarBodegas();
     };
 
-    const handleFormSuccess = () => {
-        setShowForm(false);
-        cargarBodegas();
+    const handleCancelar = () => {
+        setModoEdicion(false);
+        setBodegaSeleccionada(null);
     };
 
-    const cambiarPagina = (nuevaPagina) => {
-        if (nuevaPagina >= 1 && nuevaPagina <= paginacion.totalPaginas) {
-            setPaginacion(prev => ({ ...prev, paginaActual: nuevaPagina }));
-        }
-    };
+    // Filtrado seguro
+    const bodegasFiltradas = bodegas.filter((bodega) => {
+        if (!busqueda) return true;
 
-    const calcularRangoMostrado = (pagina, porPagina, total) => {
-        const inicio = (pagina - 1) * porPagina + 1;
-        const fin = Math.min(pagina * porPagina, total);
-        return { inicio, fin };
-    };
+        const busquedaLower = busqueda.toLowerCase();
+        const codigo = (bodega.codigo || "").toLowerCase();
+        const nombre = (bodega.nombre || "").toLowerCase();
+        const responsable = (bodega.responsable || "").toLowerCase();
 
-    const { inicio, fin } = calcularRangoMostrado(
-        paginacion.paginaActual,
-        paginacion.elementosPorPagina,
-        paginacion.totalRegistros
-    );
+        return codigo.includes(busquedaLower) ||
+            nombre.includes(busquedaLower) ||
+            responsable.includes(busquedaLower);
+    });
 
+
+
+    // Si está en modo edición, renderizar BodegaEdit
+    if (modoEdicion) {
+        return (
+            <BodegaEdit
+                bodega={bodegaSeleccionada}
+                onSubmit={handleGuardar}
+                onCancel={handleCancelar}
+            />
+        );
+    }
+
+    // Renderizar vista principal
     return (
-        <div className="bg-white rounded-md shadow-md p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2">
-                    <Warehouse className="w-6 h-6 text-blue-600" />
-                    <h1 className="text-2xl font-bold text-gray-800">Gestión de Bodegas</h1>
+        <div className="p-6">
+            {cargando && <Loader />}
+            {alert.show && (
+                <Alert
+                    type={alert.type}
+                    message={alert.message}
+                    onClose={() => setAlert({ show: false, type: "", message: "" })}
+                />
+            )}
+
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-800">Gestión de Bodegas</h1>
+                <p className="text-gray-600 mt-2">Administra las bodegas del sistema</p>
+            </div>
+
+            {/* Barra de acciones */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div className="w-full md:w-96">
+                    <input
+                        type="text"
+                        placeholder="Buscar por código, nombre o responsable..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                 </div>
                 <button
-                    onClick={handleNuevaBodega}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
+                    onClick={handleNuevo}
+                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
                 >
-                    <Plus className="w-4 h-4" />
-                    Nueva Bodega
+                    + Nueva Bodega
                 </button>
             </div>
 
-            {/* Filtros */}
-            <div className="mb-4 flex gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre, responsable o dirección..."
-                        value={busqueda}
-                        onChange={(e) => {
-                            setBusqueda(e.target.value);
-                            setPaginacion(prev => ({ ...prev, paginaActual: 1 }));
-                        }}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                </div>
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={soloActivas}
-                        onChange={(e) => {
-                            setSoloActivas(e.target.checked);
-                            setPaginacion(prev => ({ ...prev, paginaActual: 1 }));
-                        }}
-                        className="w-4 h-4 text-blue-600"
-                    />
-                    <span className="text-sm text-gray-700">Solo activas</span>
-                </label>
-            </div>
-
             {/* Tabla */}
-            {loading ? (
-                <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p className="mt-2 text-gray-600">Cargando bodegas...</p>
-                </div>
-            ) : error ? (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                        <p className="font-medium text-red-800">Error</p>
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                </div>
-            ) : bodegas.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                    <Warehouse className="w-16 h-16 mx-auto mb-2 text-gray-400" />
-                    <p>No se encontraron bodegas</p>
-                </div>
-            ) : (
-                <>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Código
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Nombre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Dirección
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Responsable
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Teléfono
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Estado
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {bodegasFiltradas.length === 0 ? (
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Nombre
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Dirección
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Responsable
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Teléfono
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Productos
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Estado
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Acciones
-                                    </th>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                                        {bodegas.length === 0 ? "No hay bodegas registradas" : "No se encontraron bodegas con ese criterio"}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {bodegas.map((bodega) => (
+                            ) : (
+                                bodegasFiltradas.map((bodega) => (
                                     <tr key={bodega.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {bodega.nombre}
-                                            </div>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {bodega.codigo || "-"}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900 max-w-xs truncate">
-                                                {bodega.direccion || "-"}
-                                            </div>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {bodega.nombre}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {bodega.responsable || "-"}
-                                            </div>
+                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                            {bodega.direccion || "-"}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {bodega.telefono || "-"}
-                                            </div>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            {bodega.responsable || "-"}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            {bodega.telefono || "-"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button
-                                                onClick={() => handleVerAlertas(bodega)}
-                                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${bodega.activa
+                                                    ? "bg-green-100 text-green-800"
+                                                    : "bg-red-100 text-red-800"
+                                                    }`}
                                             >
-                                                {bodega.totalProductos}
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bodega.activa
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {bodega.activa ? 'Activa' : 'Inactiva'}
+                                                {bodega.activa ? "Activa" : "Inactiva"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => handleVerBodega(bodega)}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="Ver detalles"
-                                                >
-                                                    <Eye className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEditarBodega(bodega)}
-                                                    className="text-yellow-600 hover:text-yellow-900"
-                                                    title="Editar"
-                                                >
-                                                    <Edit className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCambiarEstado(bodega.id, bodega.activa)}
-                                                    className={`${bodega.activa ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}`}
-                                                    title={bodega.activa ? 'Desactivar' : 'Activar'}
-                                                >
-                                                    {bodega.activa ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEliminarBodega(bodega.id)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                    title="Eliminar"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => handleEditar(bodega)}
+                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                                title="Editar"
+                                            >
+                                                <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleEliminar(bodega.id, bodega.nombre)}
+                                                className="text-red-600 hover:text-red-900"
+                                                title="Eliminar"
+                                            >
+                                                <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                    {/* Paginación */}
-                    <div className="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                        <div className="flex flex-1 justify-between sm:hidden">
-                            <button
-                                onClick={() => cambiarPagina(paginacion.paginaActual - 1)}
-                                disabled={paginacion.paginaActual === 1}
-                                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                            >
-                                Anterior
-                            </button>
-                            <button
-                                onClick={() => cambiarPagina(paginacion.paginaActual + 1)}
-                                disabled={paginacion.paginaActual === paginacion.totalPaginas}
-                                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
-                        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Mostrando <span className="font-medium">{inicio}</span> a{' '}
-                                    <span className="font-medium">{fin}</span> de{' '}
-                                    <span className="font-medium">{paginacion.totalRegistros}</span> bodegas
+            {/* Modal de confirmación de eliminación */}
+            {modalConfirmacion.show && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div className="mt-3 text-center">
+                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">
+                                Eliminar Bodega
+                            </h3>
+                            <div className="mt-2 px-7 py-3">
+                                <p className="text-sm text-gray-500">
+                                    ¿Está seguro de eliminar la bodega "<strong>{modalConfirmacion.nombre}</strong>"?
+                                    Esta acción no se puede deshacer.
                                 </p>
                             </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                    <button
-                                        onClick={() => cambiarPagina(paginacion.paginaActual - 1)}
-                                        disabled={paginacion.paginaActual === 1}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                                    >
-                                        ‹ Anterior
-                                    </button>
-
-                                    {[...Array(paginacion.totalPaginas)].map((_, index) => {
-                                        const numeroPagina = index + 1;
-                                        const mostrar =
-                                            numeroPagina === 1 ||
-                                            numeroPagina === paginacion.totalPaginas ||
-                                            (numeroPagina >= paginacion.paginaActual - 1 &&
-                                                numeroPagina <= paginacion.paginaActual + 1);
-
-                                        if (!mostrar) {
-                                            if (
-                                                numeroPagina === 2 &&
-                                                paginacion.paginaActual > 3
-                                            ) {
-                                                return (
-                                                    <span key={numeroPagina} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                                        ...
-                                                    </span>
-                                                );
-                                            }
-                                            if (
-                                                numeroPagina === paginacion.totalPaginas - 1 &&
-                                                paginacion.paginaActual < paginacion.totalPaginas - 2
-                                            ) {
-                                                return (
-                                                    <span key={numeroPagina} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                                        ...
-                                                    </span>
-                                                );
-                                            }
-                                            return null;
-                                        }
-
-                                        return (
-                                            <button
-                                                key={numeroPagina}
-                                                onClick={() => cambiarPagina(numeroPagina)}
-                                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${paginacion.paginaActual === numeroPagina
-                                                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {numeroPagina}
-                                            </button>
-                                        );
-                                    })}
-
-                                    <button
-                                        onClick={() => cambiarPagina(paginacion.paginaActual + 1)}
-                                        disabled={paginacion.paginaActual === paginacion.totalPaginas}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                                    >
-                                        Siguiente ›
-                                    </button>
-                                </nav>
+                            <div className="flex gap-4 justify-center mt-4">
+                                <button
+                                    onClick={cancelarEliminar}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmarEliminar}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                >
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
                     </div>
-                </>
-            )}
-
-            {/* Modal de Formulario */}
-            {showForm && (
-                <BodegaForm
-                    bodega={bodegaSeleccionada}
-                    modo={modoFormulario}
-                    onClose={() => setShowForm(false)}
-                    onSuccess={handleFormSuccess}
-                />
-            )}
-
-            {/* Modal de Alertas */}
-            {showAlertas && (
-                <BodegaAlertasModal
-                    bodega={bodegaAlertas}
-                    onClose={() => setShowAlertas(false)}
-                />
+                </div>
             )}
         </div>
     );

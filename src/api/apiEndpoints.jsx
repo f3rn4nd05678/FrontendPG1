@@ -64,7 +64,7 @@ const API_ENDPOINTS = {
     GET_MENU: "/Menu/Obtener-menu",
     GET_ALL_MENUS: "/Menu/Obtener-todos-menus",
   },
-    CATEGORIA: {
+  CATEGORIA: {
     LIST: "/Categoria/listar",
     GET: "/Categoria/obtener",
     ACTIVAS: "/Categoria/activas",
@@ -72,6 +72,14 @@ const API_ENDPOINTS = {
     UPDATE: "/Categoria/actualizar",
     DELETE: "/Categoria/eliminar",
     VALIDATE_CODE: "/Categoria/validar-codigo",
+  },
+  BODEGA: {
+    LIST: "/Bodega/listar",
+    GET: "/Bodega/obtener",
+    CREATE: "/Bodega/crear",
+    UPDATE: "/Bodega/actualizar",
+    DELETE: "/Bodega/eliminar",
+    VALIDATE_CODE: "/Bodega/validar-codigo",
   },
 };
 

@@ -164,7 +164,7 @@ const ClientMain = () => {
     setFiltros({ ...filtros, pagina: nuevaPagina });
   };
 
-  console.log("Estado actual - modoEdicion:", modoEdicion, "clienteSeleccionado:", clienteSeleccionado);
+
 
   return (
     <div className="p-4">
