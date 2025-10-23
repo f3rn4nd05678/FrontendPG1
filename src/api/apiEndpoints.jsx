@@ -3,6 +3,7 @@ const API_ENDPOINTS = {
     LOGIN: "/Auth/login",
     REGISTER: "/Auth/crear-usuario",
     RESET_PASSWORD: "/Auth/reiniciar-contrasenia",
+    FORGOT_PASSWORD: "/Auth/solicitar-reset-password",
     USERS: "/Auth/listar-usuarios",
   },
   USUARIO: {

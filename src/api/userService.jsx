@@ -274,3 +274,8 @@ export const cambiarPasswordPrimerLogin = async (data) => {
   const response = await api.post(ENDPOINTS.USUARIO.CAMBIAR_PASSWORD_PRIMER_LOGIN, data);
   return response.data;
 };
+
+export const solicitarResetPassword = async (correo) => {
+  const response = await api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { correo });
+  return response.data;
+};

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login as loginService } from "../api/userService";
 import PasswordChangeModal from "../components/PasswordChangeModal";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -10,6 +11,7 @@ const Login = () => {
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+    const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -137,6 +139,8 @@ const Login = () => {
                                     className="w-full py-3 pl-10 pr-10 bg-gray-700 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     required
                                 />
+
+
                                 <button
                                     type="button"
                                     onClick={toggleShowPassword}
@@ -159,7 +163,15 @@ const Login = () => {
 
                             </div>
                         </div>
-
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowForgotPasswordModal(true)}
+                                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </div>
                         <div className="pt-4">
                             <button
                                 type="submit"
@@ -190,6 +202,10 @@ const Login = () => {
             <PasswordChangeModal
                 isOpen={showPasswordChangeModal}
                 onSuccess={handlePasswordChangeSuccess}
+            />
+            <ForgotPasswordModal
+                isOpen={showForgotPasswordModal}
+                onClose={() => setShowForgotPasswordModal(false)}
             />
         </div>
     );
