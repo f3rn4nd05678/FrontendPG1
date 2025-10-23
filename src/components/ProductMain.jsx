@@ -295,7 +295,7 @@ const ProductMain = () => {
                                             {producto.nombre}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {producto.categoria || "Sin categoría"}
+                                            {producto.categoriaNombre || "Sin categoría"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             Q {parseFloat(producto.precio || 0).toFixed(2)}

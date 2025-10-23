@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { validarCodigoProducto, listarProveedores } from "../api/userService";
+import { validarCodigoProducto, listarProveedores, listarCategorias } from "../api/userService";
 import Loader from "./Loader";
 import Alert from "./Alert";
 
@@ -19,6 +19,33 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
     const [validaciones, setValidaciones] = useState({
         codigo: { validando: false, valido: true, mensaje: "" }
     });
+    const [categorias, setCategorias] = useState([]);
+
+    useEffect(() => {
+        cargarCategorias();
+    }, []);
+
+    const cargarCategorias = async () => {
+        try {
+            const res = await listarCategorias();
+            const payload = res?.detail ?? res;
+
+            const list =
+                Array.isArray(payload?.detail) ? payload.detail :
+                    Array.isArray(payload?.categorias) ? payload.categorias :
+                        Array.isArray(payload) ? payload :
+                            [];
+
+            setCategorias(list);
+        } catch (error) {
+            console.error("Error al cargar categorías:", error);
+            setAlert({
+                show: true,
+                type: "error",
+                message: "Error al cargar las categorías",
+            });
+        }
+    };
 
     useEffect(() => {
         cargarProveedores();
@@ -51,45 +78,53 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
         }));
     };
 
-    const handleBlurCodigo = async (e) => {
-        const codigo = e.target.value.trim();
+    const handleBlurCodigo = async () => {
+        const codigo = formData.codigo.trim();
+
         if (!codigo) {
             setValidaciones(prev => ({
                 ...prev,
-                codigo: { validando: false, valido: false, mensaje: "El código es obligatorio" }
+                codigo: { valido: false, mensaje: "El código es requerido", validando: false }
             }));
             return;
         }
 
         setValidaciones(prev => ({
             ...prev,
-            codigo: { validando: true, valido: true, mensaje: "Validando..." }
+            codigo: { ...prev.codigo, validando: true, mensaje: "Validando..." }
         }));
 
         try {
-            const requestData = { codigo };
-            if (productoInicial?.id) {
-                requestData.idExcluir = productoInicial.id;
-            }
+            // Solo validar si estamos editando, en crear el backend lo genera
+            if (productoInicial) {
+                const response = await validarCodigoProducto(codigo, productoInicial.id);
 
-            const response = await validarCodigoProducto(requestData);
-
-            if (response.success && response.detail.existe) {
-                setValidaciones(prev => ({
-                    ...prev,
-                    codigo: {
-                        validando: false,
-                        valido: false,
-                        mensaje: "Este código ya está en uso"
-                    }
-                }));
+                if (response.detail && response.detail.existe) {
+                    setValidaciones(prev => ({
+                        ...prev,
+                        codigo: {
+                            valido: false,
+                            mensaje: "Este código ya está en uso",
+                            validando: false
+                        }
+                    }));
+                } else {
+                    setValidaciones(prev => ({
+                        ...prev,
+                        codigo: {
+                            valido: true,
+                            mensaje: "Código disponible",
+                            validando: false
+                        }
+                    }));
+                }
             } else {
                 setValidaciones(prev => ({
                     ...prev,
                     codigo: {
-                        validando: false,
                         valido: true,
-                        mensaje: "✓ Código disponible"
+                        mensaje: "El código se generará automáticamente",
+                        validando: false
                     }
                 }));
             }
@@ -98,9 +133,9 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
             setValidaciones(prev => ({
                 ...prev,
                 codigo: {
-                    validando: false,
-                    valido: true,
-                    mensaje: ""
+                    valido: false,
+                    mensaje: "Error al validar el código",
+                    validando: false
                 }
             }));
         }
@@ -108,60 +143,13 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validaciones según el backend
-        if (!formData.codigo.trim()) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "El código del producto es obligatorio"
-            });
-            return;
-        }
-
-        if (!formData.nombre.trim()) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "El nombre del producto es obligatorio"
-            });
-            return;
-        }
-
-        if (!validaciones.codigo.valido) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "El código del producto ya existe"
-            });
-            return;
-        }
-
-        if (parseFloat(formData.precio) <= 0) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "El precio debe ser mayor a 0"
-            });
-            return;
-        }
-
-        if (parseInt(formData.stockMinimo) < 0) {
-            setAlert({
-                show: true,
-                type: "error",
-                message: "El stock mínimo no puede ser negativo"
-            });
-            return;
-        }
-
         setLoading(true);
+
         try {
-            // Preparar datos según el backend espera
             const dataToSend = {
                 nombre: formData.nombre.trim(),
-                codigo: formData.codigo.trim(),
-                categoria: formData.categoria.trim() || null,
+                codigo: productoInicial ? formData.codigo.trim() : null,
+                categoriaId: parseInt(formData.categoria),
                 precio: parseFloat(formData.precio),
                 stockMinimo: parseInt(formData.stockMinimo),
                 proveedorId: formData.proveedorId ? parseInt(formData.proveedorId) : null
@@ -210,7 +198,7 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                         {/* Código */}
                         <div>
                             <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Código del Producto *
+                                Código del Producto {!productoInicial && "(Se genera automáticamente)"}
                             </label>
                             <input
                                 name="codigo"
@@ -219,24 +207,26 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                                 onChange={handleChange}
                                 onBlur={handleBlurCodigo}
                                 maxLength={50}
+                                placeholder={!productoInicial ? "Se generará automáticamente" : ""}
                                 className={`w-full p-2 border rounded-md focus:outline-none focus:ring-2 ${validaciones.codigo.validando
                                         ? "border-yellow-400 focus:ring-yellow-500"
                                         : validaciones.codigo.valido
                                             ? "border-gray-300 focus:ring-blue-500"
                                             : "border-red-500 focus:ring-red-500"
-                                    }`}
-                                required
-                                disabled={productoInicial !== null}
+                                    } ${!productoInicial ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-100 cursor-not-allowed'}`}
+                                disabled={true}
+                                title={productoInicial ? "El código no se puede modificar" : "El código se genera automáticamente"}
                             />
-                            {validaciones.codigo.mensaje && (
-                                <p
-                                    className={`text-sm mt-1 ${validaciones.codigo.valido ? "text-green-600" : "text-red-600"
-                                        }`}
-                                >
+                            {validaciones.codigo.mensaje && !productoInicial && (
+                                <p className="text-sm mt-1 text-gray-600">
                                     {validaciones.codigo.mensaje}
                                 </p>
                             )}
-                            <p className="text-xs text-gray-500 mt-1">Máximo 50 caracteres</p>
+                            {productoInicial && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    El código no se puede modificar
+                                </p>
+                            )}
                         </div>
 
                         {/* Nombre */}
@@ -259,18 +249,22 @@ const ProductEdit = ({ onSubmit, producto: productoInicial = null, onCancel }) =
                         {/* Categoría */}
                         <div>
                             <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Categoría
+                                Categoría *
                             </label>
-                            <input
+                            <select
                                 name="categoria"
-                                type="text"
                                 value={formData.categoria}
                                 onChange={handleChange}
-                                maxLength={50}
                                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ej: Bolsas Plásticas, Embalaje Industrial"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Máximo 50 caracteres (opcional)</p>
+                                required
+                            >
+                                <option value="">Seleccione una categoría</option>
+                                {categorias.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {cat.nombre}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Proveedor */}

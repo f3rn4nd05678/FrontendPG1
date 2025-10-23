@@ -279,3 +279,46 @@ export const solicitarResetPassword = async (correo) => {
   const response = await api.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { correo });
   return response.data;
 };
+
+export const listarCategorias = async () => {
+  const response = await api.get(ENDPOINTS.PRODUCTO.CATEGORIA);
+  return response.data;
+};
+
+
+export const listarCategoriasActivas = async () => {
+  const response = await api.get(ENDPOINTS.CATEGORIA.ACTIVAS);
+  return response.data;
+};
+
+export const obtenerCategoria = async (data) => {
+  const response = await api.post(ENDPOINTS.CATEGORIA.GET, data);
+  return response.data;
+};
+
+export const crearCategoria = async (data) => {
+  const response = await api.post(ENDPOINTS.CATEGORIA.CREATE, data);
+  return response.data;
+};
+
+export const actualizarCategoria = async (data) => {
+  const { id, ...datos } = data;
+  const response = await api.post(ENDPOINTS.CATEGORIA.UPDATE, {
+    id,
+    datos
+  });
+  return response.data;
+};
+
+export const eliminarCategoria = async (data) => {
+  const response = await api.post(ENDPOINTS.CATEGORIA.DELETE, data);
+  return response.data;
+};
+
+export const validarCodigoCategoria = async (codigoPrefijo, excluirId = null) => {
+  const response = await api.post(ENDPOINTS.CATEGORIA.VALIDATE_CODE, {
+    codigoPrefijo,
+    excluirId
+  });
+  return response.data;
+};

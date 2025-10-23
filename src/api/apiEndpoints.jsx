@@ -49,6 +49,7 @@ const API_ENDPOINTS = {
     UPDATE: "/Producto/actualizar",
     DELETE: "/Producto/eliminar",
     VALIDATE_CODE: "/Producto/validar-codigo",
+    CATEGORIA: "/producto/categorias",
   },
   PROVEEDOR: {
     LIST: "/Proveedor/listar",
@@ -62,6 +63,15 @@ const API_ENDPOINTS = {
   MENU: {
     GET_MENU: "/Menu/Obtener-menu",
     GET_ALL_MENUS: "/Menu/Obtener-todos-menus",
+  },
+    CATEGORIA: {
+    LIST: "/Categoria/listar",
+    GET: "/Categoria/obtener",
+    ACTIVAS: "/Categoria/activas",
+    CREATE: "/Categoria/crear",
+    UPDATE: "/Categoria/actualizar",
+    DELETE: "/Categoria/eliminar",
+    VALIDATE_CODE: "/Categoria/validar-codigo",
   },
 };
 

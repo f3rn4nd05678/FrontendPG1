@@ -4,6 +4,7 @@ import ProveedorMain from "./ProveedorMain";
 import ProductMain from "./ProductMain";
 import UserMain from "./UserMain";
 import RolMain from "./RolMain";
+import CategoryMain from "./CategoryMain";
 
 const MainContent = ({ view }) => {
 
@@ -24,6 +25,9 @@ const MainContent = ({ view }) => {
 
             case "/clientes":
                 return <ClientMain />;
+
+            case "/categorias":
+                return <CategoryMain />;
 
             case "/cotizaciones":
                 return (

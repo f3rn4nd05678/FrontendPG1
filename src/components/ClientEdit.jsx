@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { validarCodigo, validarNit } from "../api/userService";
+import { validarNit } from "../api/userService";
 import Loader from "./Loader";
 import Alert from "./Alert";
 
 const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
     const [formData, setFormData] = useState({
-        codigo: "",
         tipoCliente: "Regular",
         nombre: "",
         nombreExtranjero: "",
@@ -19,29 +18,19 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
         fax: "",
         correoElectronico: "",
         sitioWeb: "",
-        posicion: "",
-        titulo: "",
-        segundoNombre: "",
-        apellido: "",
-        saldoCuenta: 0,
         limiteCredito: 0,
         diasCredito: 30,
         descuentoPorcentaje: 0,
-        activo: true,
         bloquearMarketing: false,
         observaciones1: "",
-        observaciones2: "",
-        claveAcceso: "",
-        ciudadNacimiento: "",
     });
 
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, type: "", message: "" });
-    const [activeTab, setActiveTab] = useState("general");
     const [validaciones, setValidaciones] = useState({
-        codigo: { validando: false, valido: true, mensaje: "" },
         nit: { validando: false, valido: true, mensaje: "" },
     });
+    const [touched, setTouched] = useState({});
 
     useEffect(() => {
         if (clienteInicial) {
@@ -56,37 +45,17 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
             [name]: type === "checkbox" ? checked : value,
         }));
 
-        if (name === "codigo" && value.trim().length > 2) {
-            validarCodigoCliente(value);
-        } else if (name === "nit" && value.trim().length > 5) {
+        // Marcar el campo como "tocado"
+        setTouched(prev => ({ ...prev, [name]: true }));
+
+        if (name === "nit" && value.trim().length > 5) {
             validarNitCliente(value);
         }
     };
 
-    const validarCodigoCliente = async (codigo) => {
-        if (!codigo || clienteInicial?.codigo === codigo) return;
-
-        setValidaciones(prev => ({
-            ...prev,
-            codigo: { ...prev.codigo, validando: true }
-        }));
-
-        try {
-            const response = await validarCodigo({ codigo });
-            setValidaciones(prev => ({
-                ...prev,
-                codigo: {
-                    validando: false,
-                    valido: response.detail.disponible,
-                    mensaje: response.detail.mensaje
-                }
-            }));
-        } catch (error) {
-            setValidaciones(prev => ({
-                ...prev,
-                codigo: { validando: false, valido: true, mensaje: "Error al validar el código" }
-            }));
-        }
+    const handleBlur = (e) => {
+        const { name } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
     };
 
     const validarNitCliente = async (nit) => {
@@ -94,7 +63,7 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
 
         setValidaciones(prev => ({
             ...prev,
-            nit: { ...prev.nit, validando: true }
+            nit: { ...prev.nit, validando: true, mensaje: "Validando NIT..." }
         }));
 
         try {
@@ -110,13 +79,31 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
         } catch (error) {
             setValidaciones(prev => ({
                 ...prev,
-                nit: { validando: false, valido: true, mensaje: "Error al validar el NIT" }
+                nit: { validando: false, valido: false, mensaje: "Error al validar el NIT" }
             }));
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Marcar todos los campos como tocados
+        setTouched({
+            nombre: true,
+            nit: true,
+            telefono1: true,
+            correoElectronico: true,
+        });
+
+        if (!isFormValid()) {
+            setAlert({
+                show: true,
+                type: "error",
+                message: "Por favor complete todos los campos obligatorios correctamente"
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -128,8 +115,8 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
             });
 
             if (!clienteInicial) {
+                // Resetear formulario
                 setFormData({
-                    codigo: "",
                     tipoCliente: "Regular",
                     nombre: "",
                     nombreExtranjero: "",
@@ -143,20 +130,15 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
                     fax: "",
                     correoElectronico: "",
                     sitioWeb: "",
-                    posicion: "",
-                    titulo: "",
-                    segundoNombre: "",
-                    apellido: "",
-                    saldoCuenta: 0,
                     limiteCredito: 0,
                     diasCredito: 30,
                     descuentoPorcentaje: 0,
-                    activo: true,
                     bloquearMarketing: false,
                     observaciones1: "",
-                    observaciones2: "",
-                    claveAcceso: "",
-                    ciudadNacimiento: "",
+                });
+                setTouched({});
+                setValidaciones({
+                    nit: { validando: false, valido: true, mensaje: "" }
                 });
             }
         } catch (error) {
@@ -172,296 +154,321 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
     };
 
     const isFormValid = () => {
-        return (
-            formData.codigo &&
-            formData.nombre &&
-            formData.nit &&
-            validaciones.codigo.valido &&
-            validaciones.nit.valido
-        );
+        const camposObligatorios =
+            formData.nombre?.trim() &&
+            formData.nit?.trim() &&
+            formData.correoElectronico?.trim() &&
+            formData.telefono1?.trim();
+
+        const validacionesOk =
+            validaciones.nit.valido &&
+            !validaciones.nit.validando;
+
+        return camposObligatorios && validacionesOk;
+    };
+
+    const getFieldClass = (fieldName, isValid = true) => {
+        const baseClass = "w-full p-3 border rounded-lg focus:outline-none focus:ring-2 transition-all";
+
+        if (!touched[fieldName]) {
+            return `${baseClass} border-gray-300 focus:ring-blue-500`;
+        }
+
+        if (!isValid) {
+            return `${baseClass} border-red-500 focus:ring-red-500 bg-red-50`;
+        }
+
+        return `${baseClass} border-gray-300 focus:ring-blue-500`;
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-5">
+        <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+            {loading && <Loader />}
             {alert.show && (
                 <Alert
                     type={alert.type}
                     message={alert.message}
-                    onClose={() => setAlert({ ...alert, show: false })}
+                    onClose={() => setAlert({ show: false, type: "", message: "" })}
                 />
             )}
 
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                {clienteInicial ? "Editar Cliente" : "Nuevo Cliente"}
-            </h2>
+            <div className="w-auto mx-auto">
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-4xl font-bold text-gray-900">
+                        {clienteInicial ? "Editar Cliente" : "Nuevo Cliente"}
+                    </h1>
+                    <p className="text-gray-600 mt-3 text-lg">
+                        Los campos marcados con <span className="text-red-600 font-semibold">*</span> son obligatorios
+                    </p>
+                </div>
 
-       
-            <div className="mb-5 border-b border-gray-200">
-                <nav className="flex -mb-px">
-                    {[
-                        { id: "general", label: "General", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-                        { id: "contacto", label: "Contacto", icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
-                        { id: "financiero", label: "Financiero", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-                        { id: "adicional", label: "Adicional", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`${activeTab === tab.id
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                } py-2 px-4 font-medium border-b-2 flex items-center`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
-                            </svg>
-                            {tab.label}
-                        </button>
-                    ))}
-                </nav>
-            </div>
+                {/* Formulario */}
+                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8">
 
-            <form onSubmit={handleSubmit}>
-              
-                <div className={activeTab === "general" ? "block" : "hidden"}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Código *</label>
-                            <input
-                                name="codigo"
-                                type="text"
-                                value={formData.codigo}
-                                onChange={handleChange}
-                                className={`w-full p-2 border ${!validaciones.codigo.valido ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                required
-                            />
-                            {validaciones.codigo.validando && (
-                                <span className="text-blue-500 text-xs italic">Validando código...</span>
-                            )}
-                            {!validaciones.codigo.valido && !validaciones.codigo.validando && (
-                                <span className="text-red-500 text-xs italic">{validaciones.codigo.mensaje}</span>
-                            )}
-                        </div>
+                    {/* Sección: Información Básica */}
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-3 border-b-2 border-blue-500">
+                            Información Básica
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Tipo de Cliente</label>
-                            <select
-                                name="tipoCliente"
-                                value={formData.tipoCliente}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="Regular">Regular</option>
-                                <option value="Frecuente">Frecuente</option>
-                                <option value="VIP">VIP</option>
-                                <option value="Mayorista">Mayorista</option>
-                                <option value="Distribuidor">Distribuidor</option>
-                            </select>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Nombre *</label>
-                            <input
-                                name="nombre"
-                                type="text"
-                                value={formData.nombre}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Nombre Extranjero</label>
-                            <input
-                                name="nombreExtranjero"
-                                type="text"
-                                value={formData.nombreExtranjero}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Grupo</label>
-                            <input
-                                name="grupo"
-                                type="text"
-                                value={formData.grupo}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Moneda</label>
-                            <select
-                                name="moneda"
-                                value={formData.moneda}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="GTQ">Quetzal (GTQ)</option>
-                                <option value="USD">Dólar Estadounidense (USD)</option>
-                                <option value="EUR">Euro (EUR)</option>
-                                <option value="MXN">Peso Mexicano (MXN)</option>
-                            </select>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">NIT *</label>
-                            <input
-                                name="nit"
-                                type="text"
-                                value={formData.nit}
-                                onChange={handleChange}
-                                className={`w-full p-2 border ${!validaciones.nit.valido ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                required
-                            />
-                            {validaciones.nit.validando && (
-                                <span className="text-blue-500 text-xs italic">Validando NIT...</span>
-                            )}
-                            {!validaciones.nit.valido && !validaciones.nit.validando && (
-                                <span className="text-red-500 text-xs italic">{validaciones.nit.mensaje}</span>
-                            )}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Estado</label>
-                            <div className="flex items-center">
+                            {/* Código - Solo lectura */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Código del Cliente
+                                </label>
                                 <input
-                                    name="activo"
-                                    type="checkbox"
-                                    checked={formData.activo}
-                                    onChange={handleChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    type="text"
+                                    value={clienteInicial?.codigo || "Se generará automáticamente"}
+                                    className="w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                                    disabled
+                                    readOnly
                                 />
-                                <span className="ml-2 text-gray-700">Cliente Activo</span>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {clienteInicial ? "El código no se puede modificar" : "El código se asigna automáticamente"}
+                                </p>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div className={activeTab === "contacto" ? "block" : "hidden"}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Dirección</label>
-                            <textarea
-                                name="direccion"
-                                value={formData.direccion}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows="3"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Ciudad</label>
-                            <input
-                                name="ciudadNacimiento"
-                                type="text"
-                                value={formData.ciudadNacimiento}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Teléfono Principal</label>
-                            <input
-                                name="telefono1"
-                                type="tel"
-                                value={formData.telefono1}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Teléfono Secundario</label>
-                            <input
-                                name="telefono2"
-                                type="tel"
-                                value={formData.telefono2}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Teléfono Móvil</label>
-                            <input
-                                name="telefonoMovil"
-                                type="tel"
-                                value={formData.telefonoMovil}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Fax</label>
-                            <input
-                                name="fax"
-                                type="tel"
-                                value={formData.fax}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Correo Electrónico</label>
-                            <input
-                                name="correoElectronico"
-                                type="email"
-                                value={formData.correoElectronico}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Sitio Web</label>
-                            <input
-                                name="sitioWeb"
-                                type="url"
-                                value={formData.sitioWeb}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-           
-                <div className={activeTab === "financiero" ? "block" : "hidden"}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Saldo de Cuenta</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-500 sm:text-sm">Q</span>
-                                </div>
-                                <input
-                                    name="saldoCuenta"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={formData.saldoCuenta}
+                            {/* Tipo de Cliente */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Tipo de Cliente <span className="text-red-600">*</span>
+                                </label>
+                                <select
+                                    name="tipoCliente"
+                                    value={formData.tipoCliente}
                                     onChange={handleChange}
-                                    className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                    <option value="Regular">Regular</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="Corporativo">Corporativo</option>
+                                </select>
+                            </div>
+
+                            {/* Nombre */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Nombre <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    name="nombre"
+                                    type="text"
+                                    value={formData.nombre}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className={getFieldClass('nombre', formData.nombre?.trim())}
+                                    placeholder="Ingrese el nombre del cliente"
+                                    required
+                                />
+                                {touched.nombre && !formData.nombre?.trim() && (
+                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                )}
+                            </div>
+
+                            {/* NIT */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    NIT <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    name="nit"
+                                    type="text"
+                                    value={formData.nit}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${validaciones.nit.validando
+                                            ? "border-yellow-400 focus:ring-yellow-500"
+                                            : touched.nit && !formData.nit?.trim()
+                                                ? "border-red-500 focus:ring-red-500 bg-red-50"
+                                                : !validaciones.nit.valido && formData.nit?.trim()
+                                                    ? "border-red-500 focus:ring-red-500 bg-red-50"
+                                                    : validaciones.nit.valido && formData.nit?.trim() && validaciones.nit.mensaje
+                                                        ? "border-green-500 focus:ring-green-500"
+                                                        : "border-gray-300 focus:ring-blue-500"
+                                        }`}
+                                    placeholder="Ingrese el NIT"
+                                    required
+                                />
+                                {validaciones.nit.mensaje && (
+                                    <p className={`text-xs mt-1 ${validaciones.nit.validando ? "text-yellow-600" :
+                                            validaciones.nit.valido ? "text-green-600" : "text-red-600"
+                                        }`}>
+                                        {validaciones.nit.mensaje}
+                                    </p>
+                                )}
+                                {touched.nit && !formData.nit?.trim() && !validaciones.nit.mensaje && (
+                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                )}
+                            </div>
+
+                            {/* Nombre Extranjero */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Nombre Extranjero
+                                </label>
+                                <input
+                                    name="nombreExtranjero"
+                                    type="text"
+                                    value={formData.nombreExtranjero}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Opcional"
+                                />
+                            </div>
+
+                            {/* Grupo */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Grupo
+                                </label>
+                                <input
+                                    name="grupo"
+                                    type="text"
+                                    value={formData.grupo}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Opcional"
+                                />
+                            </div>
+
+                            {/* Moneda */}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Moneda <span className="text-red-600">*</span>
+                                </label>
+                                <select
+                                    name="moneda"
+                                    value={formData.moneda}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                    <option value="GTQ">GTQ - Quetzales</option>
+                                    <option value="USD">USD - Dólares</option>
+                                    <option value="EUR">EUR - Euros</option>
+                                </select>
+                            </div>
+
+                            {/* Dirección */}
+                            <div className="md:col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Dirección
+                                </label>
+                                <textarea
+                                    name="direccion"
+                                    value={formData.direccion}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    rows="2"
+                                    placeholder="Dirección completa (opcional)"
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Límite de Crédito</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-500 sm:text-sm">Q</span>
-                                </div>
+                    {/* Sección: Información de Contacto */}
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-3 border-b-2 border-green-500">
+                            Información de Contacto
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Teléfono 1 <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    name="telefono1"
+                                    type="tel"
+                                    value={formData.telefono1}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className={getFieldClass('telefono1', formData.telefono1?.trim())}
+                                    placeholder="Ej: 2345-6789"
+                                    required
+                                />
+                                {touched.telefono1 && !formData.telefono1?.trim() && (
+                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Teléfono 2
+                                </label>
+                                <input
+                                    name="telefono2"
+                                    type="tel"
+                                    value={formData.telefono2}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Opcional"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Teléfono Móvil
+                                </label>
+                                <input
+                                    name="telefonoMovil"
+                                    type="tel"
+                                    value={formData.telefonoMovil}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ej: 5678-1234"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Correo Electrónico <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    name="correoElectronico"
+                                    type="email"
+                                    value={formData.correoElectronico}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className={getFieldClass('correoElectronico', formData.correoElectronico?.trim())}
+                                    placeholder="ejemplo@correo.com"
+                                    required
+                                />
+                                {touched.correoElectronico && !formData.correoElectronico?.trim() && (
+                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                )}
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Sitio Web
+                                </label>
+                                <input
+                                    name="sitioWeb"
+                                    type="url"
+                                    value={formData.sitioWeb}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="https://ejemplo.com"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sección: Información Financiera */}
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-3 border-b-2 border-purple-500">
+                            Información Financiera
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Límite de Crédito (Q)
+                                </label>
                                 <input
                                     name="limiteCredito"
                                     type="number"
@@ -469,26 +476,30 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
                                     step="0.01"
                                     value={formData.limiteCredito}
                                     onChange={handleChange}
-                                    className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
                                 />
                             </div>
-                        </div>
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Días de Crédito</label>
-                            <input
-                                name="diasCredito"
-                                type="number"
-                                min="0"
-                                value={formData.diasCredito}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Días de Crédito
+                                </label>
+                                <input
+                                    name="diasCredito"
+                                    type="number"
+                                    min="0"
+                                    value={formData.diasCredito}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="30"
+                                />
+                            </div>
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Porcentaje de Descuento</label>
-                            <div className="relative">
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Descuento (%)
+                                </label>
                                 <input
                                     name="descuentoPorcentaje"
                                     type="number"
@@ -497,84 +508,82 @@ const ClientEdit = ({ onSubmit, cliente: clienteInicial = null, onCancel }) => {
                                     step="0.01"
                                     value={formData.descuentoPorcentaje}
                                     onChange={handleChange}
-                                    className="w-full pr-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
                                 />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-500 sm:text-sm">%</span>
-                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-             
-                <div className={activeTab === "adicional" ? "block" : "hidden"}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Observaciones 1</label>
-                            <textarea
-                                name="observaciones1"
-                                value={formData.observaciones1}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows="3"
-                            />
-                        </div>
+                    {/* Sección: Información Adicional */}
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-3 border-b-2 border-orange-500">
+                            Información Adicional
+                        </h2>
+                        <div className="grid grid-cols-1 gap-6">
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Observaciones 2</label>
-                            <textarea
-                                name="observaciones2"
-                                value={formData.observaciones2}
-                                onChange={handleChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows="3"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-medium mb-2">Bloquear Marketing</label>
-                            <div className="flex items-center">
-                                <input
-                                    name="bloquearMarketing"
-                                    type="checkbox"
-                                    checked={formData.bloquearMarketing}
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Observaciones
+                                </label>
+                                <textarea
+                                    name="observaciones1"
+                                    value={formData.observaciones1}
                                     onChange={handleChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    rows="4"
+                                    placeholder="Notas adicionales sobre el cliente (opcional)"
                                 />
-                                <span className="ml-2 text-gray-700">Bloquear comunicaciones de marketing</span>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        name="bloquearMarketing"
+                                        type="checkbox"
+                                        checked={formData.bloquearMarketing}
+                                        onChange={handleChange}
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <span className="ml-3 text-gray-700 font-medium">Bloquear comunicaciones de marketing</span>
+                                </label>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex justify-end mt-6 space-x-3">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={!isFormValid() || loading}
-                        className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isFormValid() || loading ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                    >
-                        {loading ? (
-                            <div className="flex items-center">
-                                <Loader size="small" color="white" />
-                                <span className="ml-2">
-                                    {clienteInicial ? "Actualizando..." : "Guardando..."}
-                                </span>
-                            </div>
-                        ) : (
-                            <span>{clienteInicial ? "Actualizar Cliente" : "Guardar Cliente"}</span>
-                        )}
-                    </button>
-                </div>
-            </form>
+                    {/* Botones de Acción */}
+                    <div className="flex justify-end gap-4 pt-8 border-t-2 border-gray-200">
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="px-8 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!isFormValid() || loading}
+                            className={`px-8 py-3 bg-blue-600 text-white rounded-lg transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isFormValid() || loading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                                }`}
+                            title={!isFormValid() ? "Complete los campos obligatorios" : ""}
+                        >
+                            {loading ? (
+                                <div className="flex items-center">
+                                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>{clienteInicial ? "Actualizando..." : "Guardando..."}</span>
+                                </div>
+                            ) : (
+                                <span>{clienteInicial ? "Actualizar Cliente" : "Guardar Cliente"}</span>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
