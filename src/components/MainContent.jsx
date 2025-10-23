@@ -5,6 +5,7 @@ import ProductMain from "./ProductMain";
 import UserMain from "./UserMain";
 import RolMain from "./RolMain";
 import CategoryMain from "./CategoryMain";
+import BodegaMain from "./BodegaMain";
 
 const MainContent = ({ view }) => {
 
@@ -28,6 +29,9 @@ const MainContent = ({ view }) => {
 
             case "/categorias":
                 return <CategoryMain />;
+
+            case "/bodegas":
+                return <BodegaMain />;
 
             case "/cotizaciones":
                 return (
